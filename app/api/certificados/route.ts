@@ -63,6 +63,8 @@ export async function POST(req: NextRequest) {
   }
 
   const templatePath = path.resolve(process.cwd(), certificado.ruta_certificado);
+  console.log('📁 Ruta del certificado esperada:', templatePath);
+console.log('🕵️‍♂️ El archivo existe?', fs.existsSync(templatePath));
   let templateBytes;
   try {
     templateBytes = fs.readFileSync(templatePath);
