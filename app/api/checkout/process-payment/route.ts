@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     // Crear el pago en MercadoPago
     const result = await payment.create({ body });
 
-    console.log('✅ Pago procesado:', JSON.stringify(result, null, 2));
+    console.log('✅ Pago procesado 1.0:', JSON.stringify(result, null, 2));
 
     // Verificar el estado del pago
     if (result.status === 'approved') {
