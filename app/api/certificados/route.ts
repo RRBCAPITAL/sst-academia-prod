@@ -8,9 +8,8 @@ import { readFile } from 'fs/promises';
 import { degrees } from 'pdf-lib';
 import { CoursesCertificados } from '@/src/presentation/utils/CoursesOrdering';
 import prismaDB from '@/src/infrastructure/db/prisma/prisma-client';
-import { certificadoSIGBase64 } from '@/src/presentation/certificados-base64/CertificadoSistemaIntegradoGestion64';
 
-const fontkit: any = require('fontkit'); 
+const fontkit: any = require('fontkit');
 
 function hexToPdfColor(hex: string) {
   const sanitized = hex.replace('#', '');
@@ -31,50 +30,65 @@ function obtenerMesYAnio(fecha: Date): string {
 export async function POST(req: NextRequest) {
   const { user_nombre, user_id, curso_id } = await req.json();
 
-  const certificado = CoursesCertificados.find((c) =>  c.curso_id === curso_id && !!c);
-  
-  if(!certificado || !certificado.curso_nombre || !certificado.ruta_certificado){
-    return NextResponse.json({
-      message: 'Error al procesar certificado',
-    });
+  const certificado = CoursesCertificados.find((c) => c.curso_id === curso_id && !!c);
+
+  if (!certificado || !certificado.curso_nombre || !certificado.certificadoBase64) {
+    return NextResponse.json({ message: 'Certificado no disponible para este curso' }, { status: 404 });
   }
 
-  // Buscar en la base de datos si ya hay un código
-  const usuarioCurso = await prismaDB.usuario_curso.findUnique({
-    where: {
-      user_id_curso_id: { user_id, curso_id }, // por la PK compuesta
-    },
-  });
+  let codigo: string | null = null;
 
-  let codigo = usuarioCurso?.codigo_certificado;
-
-  if (!codigo) {
-    // Generar uno nuevo
-    codigo = `SST-${uuidv4().split('-')[0].toUpperCase()}`;
-
-    // Guardarlo en la BD
-    await prismaDB.usuario_curso.update({
+  try {
+    const usuarioCurso = await prismaDB.usuario_curso.findUnique({
       where: {
         user_id_curso_id: { user_id, curso_id },
       },
-      data: {
-        codigo_certificado: codigo,
-      },
     });
+
+    if (!usuarioCurso) {
+      return NextResponse.json(
+        { message: 'El usuario no está inscrito en este curso' },
+        { status: 404 }
+      );
+    }
+
+    codigo = usuarioCurso.codigo_certificado;
+
+    if (!codigo) {
+      // Generar uno nuevo
+      codigo = `SST-${uuidv4().split('-')[0].toUpperCase()}`;
+
+      // Guardarlo en la BD
+      await prismaDB.usuario_curso.update({
+        where: {
+          user_id_curso_id: { user_id, curso_id },
+        },
+        data: {
+          codigo_certificado: codigo,
+        },
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error al consultar o actualizar usuario_curso:', error);
+    return NextResponse.json(
+      { message: 'Error interno al validar el curso del usuario' },
+      { status: 500 }
+    );
   }
 
-//   const templatePath = path.resolve(process.cwd(), certificado.ruta_certificado);
-//   console.log('📁 Ruta del certificado esperada:', templatePath);
-// console.log('🕵️‍♂️ El archivo existe?', fs.existsSync(templatePath));
-//   let templateBytes;
-//   try {
-//     templateBytes = fs.readFileSync(templatePath);
-//   } catch (err) {
-//     console.error('Error al leer la plantilla PDF:', err);
-//     return NextResponse.json({ message: 'Error al generar certificado (PDF no encontrado)' }, { status: 500 });
-//   }
+  //   const templatePath = path.resolve(process.cwd(), certificado.ruta_certificado);
+  //   console.log('📁 Ruta del certificado esperada:', templatePath);
+  // console.log('🕵️‍♂️ El archivo existe?', fs.existsSync(templatePath));
+  //   let templateBytes;
+  //   try {
+  //     templateBytes = fs.readFileSync(templatePath);
+  //   } catch (err) {
+  //     console.error('Error al leer la plantilla PDF:', err);
+  //     return NextResponse.json({ message: 'Error al generar certificado (PDF no encontrado)' }, { status: 500 });
+  //   }
 
-  const templateBytes = Buffer.from(certificadoSIGBase64, 'base64');
+  const templateBytes = Buffer.from(certificado.certificadoBase64, 'base64');
   const pdfDoc = await PDFDocument.load(templateBytes);
   pdfDoc.registerFontkit(fontkit);
   const pages = pdfDoc.getPages();
@@ -83,11 +97,9 @@ export async function POST(req: NextRequest) {
 
   const fontRegularBytes = await readFile(path.resolve(process.cwd(), 'src/presentation/fonts/Poppins-Regular.ttf'));
   const fontBoldBytes = await readFile(path.resolve(process.cwd(), 'src/presentation/fonts/Poppins-Bold.ttf'));
-  const fontExtraBoldBytes = await readFile(path.resolve(process.cwd(), 'src/presentation/fonts/Poppins-ExtraBold.ttf'));
-  
+
   const fontRegular = await pdfDoc.embedFont(fontRegularBytes);
   const fontBold = await pdfDoc.embedFont(fontBoldBytes);
-  const fontExtraBold = await pdfDoc.embedFont(fontExtraBoldBytes);
 
   const colorNombreEstudiante = '#000000';
   firstPage.drawText(user_nombre.toUpperCase(), {
