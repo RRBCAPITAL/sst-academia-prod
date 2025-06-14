@@ -7,9 +7,12 @@ import {
   TextField,
   Button,
   Typography,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import apiClient from '@/src/infrastructure/http/AxiosHttpClient';
 import Link from 'next/link';
+import { useState } from "react";
 
 const ValidarCertificado = (props: {
   setOpen: (open: boolean) => void,
@@ -18,28 +21,35 @@ const ValidarCertificado = (props: {
   setCodigo: (codigo: string) => void
 }) => {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const handleCodigoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     props.setCodigo(e.target.value);
   };
 
   const handleBuscar = async () => {
-    const cursoID = props.codigo.substring(0, 3);
-    const userDNI = props.codigo.substring(3);
-
+    setLoading(true);
     try {
-      const response = await apiClient.get(
-        `/usuario-curso-info-acreditacion?curso_id=${cursoID}&user_dni=${userDNI}`
-      );
-
-      if (response.data.success) {
-        router.push(`/certificado/${props.codigo}`);
-        props.setOpen(false);
+      const response = await apiClient.get(`/certificados/${props.codigo}`);
+      if (response.data && response.data?.nombres) {
+        setAlert({ type: 'success', message: '¡Certificado válido!' });
+        setTimeout(() => {
+          router.push(`/info-certificado/${props.codigo}`);
+          props.setOpen(false);
+        }, 1500);
       } else {
-        alert("Ingresa un código válido.");
+        setAlert({ type: 'error', message: 'Código inválido. Intenta nuevamente.' });
       }
-    } catch (error) {
-      console.error("Error en la petición:", error);
+    }  catch (error: any) {
+        const errorMessage =
+          error?.response?.data?.error ||
+          error?.message ||             
+          'Ocurrió un error al validar el certificado.';
+      
+        setAlert({ type: 'error', message: errorMessage });
+      } finally {
+      setLoading(false);
     }
   };
 
@@ -89,10 +99,21 @@ const ValidarCertificado = (props: {
           variant="contained"
           fullWidth
           onClick={handleBuscar}
+          disabled={loading}
           sx={{ fontSize: '20px', color: 'white', fontWeight: 'bold' }}
         >
-          Validar
+          {loading ? 'Validando...' : 'Validar'}
         </Button>
+        <Snackbar
+          open={!!alert}
+          autoHideDuration={4000}
+          onClose={() => setAlert(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setAlert(null)} severity={alert?.type} sx={{ width: '100%' }} variant="filled">
+            {alert?.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </Modal>
   )

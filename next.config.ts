@@ -14,6 +14,12 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
+    outputFileTracingIncludes: {
+      'app/api/certificado': [
+        './src/presentation/certificados-pdf',
+        './src/presentation/fonts',
+      ],
+    },
 };
 
 export default nextConfig;

@@ -63,7 +63,13 @@ export async function POST(req: NextRequest) {
   }
 
   const templatePath = path.resolve(process.cwd(), certificado.ruta_certificado);
-  const templateBytes = fs.readFileSync(templatePath);
+  let templateBytes;
+  try {
+    templateBytes = fs.readFileSync(templatePath);
+  } catch (err) {
+    console.error('Error al leer la plantilla PDF:', err);
+    return NextResponse.json({ message: 'Error al generar certificado (PDF no encontrado)' }, { status: 500 });
+  }
 
   const pdfDoc = await PDFDocument.load(templateBytes);
   pdfDoc.registerFontkit(fontkit);
