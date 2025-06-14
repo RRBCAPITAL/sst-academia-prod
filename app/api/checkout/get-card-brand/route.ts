@@ -34,3 +34,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: `Error interno del servidor: ${error} `, }, { status: 500 });
   }
 }
+
+export const config = {
+  runtime: 'nodejs',
+};
