@@ -8,6 +8,7 @@ import { readFile } from 'fs/promises';
 import { degrees } from 'pdf-lib';
 import { CoursesCertificados } from '@/src/presentation/utils/CoursesOrdering';
 import prismaDB from '@/src/infrastructure/db/prisma/prisma-client';
+import { certificadoSIGBase64 } from '@/src/presentation/certificados-base64/CertificadoSistemaIntegradoGestion64';
 
 const fontkit: any = require('fontkit'); 
 
@@ -62,17 +63,18 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const templatePath = path.resolve(process.cwd(), certificado.ruta_certificado);
-  console.log('📁 Ruta del certificado esperada:', templatePath);
-console.log('🕵️‍♂️ El archivo existe?', fs.existsSync(templatePath));
-  let templateBytes;
-  try {
-    templateBytes = fs.readFileSync(templatePath);
-  } catch (err) {
-    console.error('Error al leer la plantilla PDF:', err);
-    return NextResponse.json({ message: 'Error al generar certificado (PDF no encontrado)' }, { status: 500 });
-  }
+//   const templatePath = path.resolve(process.cwd(), certificado.ruta_certificado);
+//   console.log('📁 Ruta del certificado esperada:', templatePath);
+// console.log('🕵️‍♂️ El archivo existe?', fs.existsSync(templatePath));
+//   let templateBytes;
+//   try {
+//     templateBytes = fs.readFileSync(templatePath);
+//   } catch (err) {
+//     console.error('Error al leer la plantilla PDF:', err);
+//     return NextResponse.json({ message: 'Error al generar certificado (PDF no encontrado)' }, { status: 500 });
+//   }
 
+  const templateBytes = Buffer.from(certificadoSIGBase64, 'base64');
   const pdfDoc = await PDFDocument.load(templateBytes);
   pdfDoc.registerFontkit(fontkit);
   const pages = pdfDoc.getPages();
