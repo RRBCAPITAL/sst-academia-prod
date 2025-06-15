@@ -21,6 +21,7 @@ export async function GET() {
         nombres: true,
         apellidos: true,
         correo: true,
+        rol: true,
         fotoPerfil: true,
       },
     });

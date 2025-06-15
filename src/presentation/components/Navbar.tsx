@@ -20,6 +20,9 @@ import { useLogin } from '../context/LoginContext';
 import { useUser } from '../hooks/useUser.hook';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import SchoolIcon from '@mui/icons-material/School';
+import LogoutIcon from '@mui/icons-material/Logout';
+import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 
 const ResponsiveAppBar = () => {
   const { user, loading, logout } = useUser();
@@ -68,33 +71,6 @@ const ResponsiveAppBar = () => {
 
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {/* Menú principal móvil */}
-            <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-              <IconButton
-                size="large"
-                aria-label="menu móvil"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleOpenNavMenu}
-                sx={{ color: 'text.primary' }}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorElNav}
-                open={Boolean(anchorElNav)}
-                onClose={handleCloseNavMenu}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                sx={{ display: { xs: 'block', md: 'none' } }}
-              >
-                <MenuItem component={Link} href="/auth-register" onClick={handleCloseNavMenu}>
-                  <Typography textAlign="center">Campus Virtual</Typography>
-                </MenuItem>
-                {/* Agrega más enlaces si es necesario */}
-              </Menu>
-            </Box>
-
             {/* Logo Móvil */}
             <Box sx={{ display: { xs: 'flex', md: 'none' }, fontWeight: 'bold' }}>
               <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -128,9 +104,9 @@ const ResponsiveAppBar = () => {
                     sx={{ width: 40, height: 40, cursor: 'pointer' }}
                   />
                   {Boolean(anchorElUser) ? (
-                    <KeyboardArrowUpIcon sx={{  cursor: 'pointer', fontSize: '1rem' }}/>
+                    <KeyboardArrowUpIcon sx={{ cursor: 'pointer', fontSize: '1rem' }} />
                   ) : (
-                    <KeyboardArrowDownIcon sx={{  cursor: 'pointer', fontSize: '1rem' }}/>
+                    <KeyboardArrowDownIcon sx={{ cursor: 'pointer', fontSize: '1rem' }} />
                   )}
                 </IconButton>
                 <Menu
@@ -150,8 +126,54 @@ const ResponsiveAppBar = () => {
                       {user.correo}
                     </Typography>
                   </Box>
-                  <MenuItem onClick={handleLogout}>Cerrar sesión</MenuItem>
+
+                  <MenuItem
+                    component={Link}
+                    href="/campus-virtual"
+                    onClick={handleCloseUserMenu}
+                    sx={{
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'rgba(25, 118, 210, 0.2)',
+                      },
+                    }}
+                  >
+                    <Box sx={{ flexGrow: 1 }}>Campus virtual</Box>
+                    <SchoolIcon fontSize="small" />
+                  </MenuItem>
+
+                  <MenuItem
+                    component={Link}
+                    href="/dashboard/admin"
+                    onClick={handleCloseUserMenu}
+                    sx={{
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'rgba(25, 118, 210, 0.2)',
+                      },
+                    }}
+                  >
+                    <Box sx={{ flexGrow: 1 }}>Dashboard Admin</Box>
+                    <DashboardCustomizeIcon fontSize="small" />
+                  </MenuItem>
+
+                  <MenuItem
+                    component={'div'}
+                    onClick={handleLogout}
+                    sx={{
+                      '&:hover': {
+                        color: 'primary.main',
+                        backgroundColor: 'rgba(25, 118, 210, 0.2)',
+                      },
+                    }}
+                  >
+                    <Box sx={{ flexGrow: 1 }}>Cerrar sesión</Box>
+                    <LogoutIcon fontSize="small" />
+                  </MenuItem>
+
+                  {/* <MenuItem onClick={handleLogout}>Cerrar sesión</MenuItem> */}
                 </Menu>
+
 
               </>
             )}

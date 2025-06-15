@@ -13,6 +13,8 @@ import {
   IconButton,
   LinearProgress,
   Button,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
@@ -21,6 +23,7 @@ import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import { DataMaterialsExamen } from "../../utils/DataMaterialsExamen";
 import VerifiedIcon from '@mui/icons-material/Verified';
+import LockIcon from '@mui/icons-material/Lock';
 import { useUser } from "../../hooks/useUser.hook";
 import { useCurso } from "@/src/application/context/CursoContext";
 
@@ -41,11 +44,12 @@ const CampusVirtualCurso = (props: any) => {
   const [dataLeccionSeleccionada, setDataLeccionSeleccionada] =
     useState<any>(null);
   const [leccionHecha, setLeccionHecha] = useState<Boolean>(false);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
 
   useEffect(() => {
     const fetchCursos = async () => {
       if (!props?.curso_id || !user?.user_id) return;
-  
+
       try {
         // Detalle del curso
         const res1 = await apiClient.get(
@@ -53,11 +57,11 @@ const CampusVirtualCurso = (props: any) => {
         );
         setCurso(res1.data.curso);
         const cursoRes = res1.data.curso;
-        
+
         setCursoSeleccionado({
           nombre: cursoRes ? String(cursoRes[0].curso_nombre) : `Curso ${props.curso_id}`
         });
-        
+
         // Progreso general del curso
         const res2 = await apiClient.get(
           `/campus-virtual/usuario-curso-info-progreso?user_id=${user.user_id}`
@@ -65,7 +69,7 @@ const CampusVirtualCurso = (props: any) => {
         if (res2.data.success) {
           setCursoProgreso(res2.data.progresoCurso);
         }
-  
+
         // Lección actual y completado
         const res3 = await apiClient.get(
           `/campus-virtual/usuario-curso-progreso?user_id=${user.user_id}&curso_id=${props.curso_id}`
@@ -77,7 +81,7 @@ const CampusVirtualCurso = (props: any) => {
         console.error("Error fetching course details:", error);
       }
     };
-  
+
     fetchCursos();
   }, [props?.curso_id, user?.user_id]);
 
@@ -92,12 +96,12 @@ const CampusVirtualCurso = (props: any) => {
       alert('El usuario no está definido correctamente. Cierra sesión y vuelve a intentarlo.');
       return;
     }
-  
+
     const nombres_completos =
       user.apellidos && user.apellidos.length > 0
         ? `${user.nombres} ${user.apellidos}`
         : user.nombres;
-  
+
     try {
       const response = await fetch('/api/certificados', {
         method: 'POST',
@@ -108,13 +112,13 @@ const CampusVirtualCurso = (props: any) => {
           curso_id: props?.curso_id,
         }),
       });
-  
+
       if (!response.ok) {
         throw new Error('No se pudo generar el certificado');
       }
-  
+
       const blob = await response.blob();
-  
+
       if (typeof window !== 'undefined') {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -130,7 +134,7 @@ const CampusVirtualCurso = (props: any) => {
       alert('Ocurrió un error al generar el certificado. Intenta nuevamente.');
     }
   };
-  
+
 
   const videoUrl =
     dataLeccionSeleccionada?.[0]?.video_url ||
@@ -204,6 +208,26 @@ const CampusVirtualCurso = (props: any) => {
     }
   };
 
+  const porcentaje = Math.round(Number(progreso?.porcentaje_completado));
+  const progresoCompleto = porcentaje === 100;
+
+  const handleClickCertificado = (curso_nombre: string) => {
+    if (progresoCompleto) {
+      handleDownloadCertificado(curso_nombre);
+    } else {
+      setOpenSnackbar(true);
+    }
+  };
+
+  const handleCloseSnackbar = (
+    event?: React.SyntheticEvent | Event,
+    reason?: string
+  ) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
+  };
 
   const MaterialExamen = DataMaterialsExamen.find(
     (i) => i.curso_id === props?.curso_id
@@ -236,22 +260,13 @@ const CampusVirtualCurso = (props: any) => {
           }}
         />
       </Box>
-      <Grid
-        container
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: "column", md: "row" },
-          maxWidth: "1200px",
-          margin: "0 auto",
-          marginTop: '20px',
-          justifyContent: "center",
-          gap: {
-            xs: '4px',
-            md: '16px'
-          }
-        }}
-      >
-        <Grid size={{ xs: 12, md: 6 }} sx={{ position: "relative" }}>
+      <Grid container spacing={2} sx={{
+        display: 'flex', flexDirection: {
+          xs: 'column',
+          md: 'row'
+        }, justifyContent: 'center', marginTop: '25px'
+      }}>
+        <Grid size={{ xs: 12, md: 8 }} sx={{ order: { xs: 1, md: 2 }, display: 'flex', flexDirection: 'column' }}>
           {curso &&
             curso?.map((curso) => {
               const leccionActualId =
@@ -285,11 +300,22 @@ const CampusVirtualCurso = (props: any) => {
                     sx={{
                       position: "relative",
                       width: "100%",
-                      paddingTop: "56.25%", // Proporción 16:9
+                      paddingTop: "56.25%", // 16:9
                     }}
                   >
-                    <VimeoPlayer video_url={videoUrl} />
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    >
+                      <VimeoPlayer video_url={videoUrl} />
+                    </Box>
                   </Box>
+
                   <CardContent
                     sx={{
                       background: "#292625",
@@ -369,7 +395,12 @@ const CampusVirtualCurso = (props: any) => {
             })}
         </Grid>
         {/* Listado de unidades y lecciones */}
-        <Grid size={{ xs: 12, md: 4 }} sx={{ order: { xs: 2, md: 1 } }}>
+        <Grid size={{ xs: 12, md: 3 }} sx={{
+          order: { xs: 1, md: 2 }, overflowY: 'auto', width: '100%', maxHeight: '100vh', pr: {
+            xs: 0,
+            md: 2
+          }
+        }}>
           {unidadActual && leccionActual && (
             <Typography
               variant="h5"
@@ -623,44 +654,74 @@ const CampusVirtualCurso = (props: any) => {
                       </Box>
                     </CardContent>
                   </Card>}
-                  <Card
-                    variant="outlined"
-                    sx={{
-                      mb: 1,
-                      width: "100%",
-                      border: "2px solid #ff7931",
-                      background: "#f6f3f0",
-                      "&:hover": {
-                        border: "2px solid #ff914d", // Cambia el color del borde al pasar el mouse
-                        background: "#fff5e6", // Cambia el fondo al pasar el mouse
-                      },
-                    }}
-                  >
-                    <CardContent
-                      sx={{ display: "flex", flexDirection: "column" }}
+                <Card
+                  variant="outlined"
+                  sx={{
+                    mb: 1,
+                    width: "100%",
+                    border: progresoCompleto ? "2px solid rgb(43, 141, 1)" : "2px solid rgb(255, 171, 45)",
+                    background: progresoCompleto ? "#f6f3f0" : '#ffb74d',
+                    "&:hover": {
+                      border: progresoCompleto ? "2px solid rgb(43, 139, 2)" : "2px solid rgb(255, 153, 0)",
+                      background: progresoCompleto ? "rgb(244, 255, 240)" : "#ffb74d",
+                    },
+                  }}
+                >
+                  <CardContent sx={{ display: "flex", flexDirection: "column" }}>
+                    <Box
+                      onClick={() => handleClickCertificado(curso?.curso_nombre)}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        cursor: "pointer",
+                        userSelect: "none",
+                        px: 1,
+                        py: 1,
+                        color: progresoCompleto ? "#38bb00" : "#4e342e",
+                      }}
                     >
-                      <Box
-                        onClick={() => handleDownloadCertificado(curso.curso_nombre)}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          cursor: "pointer",
-                          userSelect: "none",
-                          px: 1,
-                          py: 1,
-                        }}
-                      >
-                          Descargar Certificado
-                          <VerifiedIcon />
+                      <Typography fontWeight="bold" sx={{ fontSize: '1rem'}}>
+                        Descargar Certificado
+                      </Typography>
+                      {progresoCompleto ? (
+                        <VerifiedIcon sx={{ color: "#38bb00" }} />
+                      ) : (
+                        <LockIcon sx={{ color: "#4e342e" }} />
+                      )}
+                    </Box>
+                  </CardContent>
+                </Card>
 
-                      </Box>
-                    </CardContent>
-                  </Card>
               </Box>
             ))}
         </Grid>
       </Grid>
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={5000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity="warning"
+          variant="filled"
+          sx={{
+            width: '100%',
+            backgroundColor: '#ffb74d', // naranja suave
+            color: '#4e342e',           // texto oscuro para buen contraste
+            fontWeight: 'bold',
+            boxShadow: 3,
+            borderRadius: '8px',
+          }}
+          iconMapping={{
+            warning: <LockIcon sx={{ mr: 1 }} />,
+          }}
+        >
+          Debes completar todo el curso para descargar el certificado.
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -8,12 +8,14 @@ import { IFormYapeX } from '../components/checkout/interfaces/form-yape.interfac
 import { IFormCardX } from '../components/checkout/interfaces/form-card.interface';
 import { useCurso } from '@/src/application/context/CursoContext';
 import { useUser } from '../hooks/useUser.hook';
+import { useRouter } from 'next/navigation';
 
 const CheckoutPaymentPage = ({ onRegistrationComplete, activeStep, steps }: { onRegistrationComplete: () => void, activeStep: number, steps: string[] }) => {
   const { cursoSeleccionado } = useCurso();
   const { user } = useUser();
   const cardBrickRef = useRef<any>(null);
   const [brickReady, setBrickReady] = useState(false);
+  const router = useRouter();
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -105,6 +107,17 @@ const CheckoutPaymentPage = ({ onRegistrationComplete, activeStep, steps }: { on
       if (response.ok) {
         setStatus({ type: 'success', message: 'Pago realizado correctamente' });
         console.log('🧾 Resultado:', result);
+          // 2. Llamar a tu API para dar acceso al curso
+          await fetch('/api/users-courses', {
+            method: 'POST',
+            body: JSON.stringify({
+              userId: user?.user_id,
+              cursos: [cursoSeleccionado?.curso_id],
+            }),
+            headers: { 'Content-Type': 'application/json' },
+          });
+          // // 3. Redirigir al usuario
+          router.push('/campus-virtual');
       } else {
         const errorMsg = result?.error || 'Error desconocido en el pago';
         setStatus({ type: 'error', message: errorMsg });

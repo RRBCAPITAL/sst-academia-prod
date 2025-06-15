@@ -22,7 +22,7 @@ import {
   IconButton,
 } from "@mui/material";
 import CampusVirtualInicio from './CampusVirtualInicio';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import CampusVirtualCurso from './CampusVirtualCurso';
 import { useUser } from '../../hooks/useUser.hook';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -77,12 +77,13 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 }));
 
 export default function CampusVirtualSidebar(props: any) {
-  const { user } = useUser();
+  const { user, logout } = useUser();
   const { cursoSeleccionado } = useCurso();
   const theme = useTheme();
   const pathname = usePathname();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true });
   const [open, setOpen] = React.useState(false);
+  const router = useRouter();
 
   React.useEffect(() => {
     setOpen(!isMobile);
@@ -120,6 +121,11 @@ export default function CampusVirtualSidebar(props: any) {
     // { text: 'Mi Progreso', url: '/progreso' },
     { text: 'Cerrar Sesión', url: '/campus-virtual-login' },
   ];
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -239,43 +245,61 @@ export default function CampusVirtualSidebar(props: any) {
         </DrawerHeader>
         <Divider />
         <List>
-          {menuItems.map((item, index) => (
-            <ListItem key={item.text} disablePadding >
-              <Link href={item.url}
-                style={{
-                  background:
-                    (pathname === item.url) ||
-                      (item.url === '/campus-virtual' && pathname?.startsWith('/campus-virtual/curso/')) // Marca 'Cursos Activos' si estamos en un curso
-                      ? '#ff914d'
-                      : '#ffffff', // Fondo blanco por defecto
-                  border: '2px solid #e4721a',
-                  borderRadius: '10px',
-                  margin: '4px 4px',
-                  width: '100%',
-                  textDecoration: 'none'
-                }}
-                passHref >
-                <ListItemButton
-                  onClick={() => {
-                    if (isMobile) handleDrawerClose();
-                  }}
-                  sx={{
-                    '&:hover': {
-                      backgroundColor: '#ff914d',  // Cambia el color de fondo al hacer hover
-                      borderColor: '#ff7017',      // Cambia el borde al hacer hover
-                    },
-                  }}>
-                  <ListItemIcon>
-                    {index % 2 === 0 ? <AppRegistrationIcon /> : <LogoutIcon />}
-                  </ListItemIcon>
-                  <Typography sx={{ fontWeight: 'bold', fontSize: '0.8rem', color: 'black' }}>
-                    {item.text}
-                  </Typography>
-                </ListItemButton>
-              </Link>
-            </ListItem>
-          ))}
-        </List>
+  {menuItems.map((item, index) => {
+    const isLogout = item.text === 'Cerrar Sesión';
+
+    const isSelected =
+      (pathname === item.url) ||
+      (item.url === '/campus-virtual' && pathname?.startsWith('/campus-virtual/curso/'));
+
+    return (
+      <ListItem key={item.text} disablePadding>
+        <Box
+          component={isLogout ? 'div' : Link}
+          {...(!isLogout ? { href: item.url } : {})}
+          onClick={() => {
+            if (isLogout) {
+              handleLogout();
+            }
+            if (isMobile) handleDrawerClose();
+          }}
+          sx={{
+            background: isSelected ? '#ff914d' : '#ffffff',
+            border: '2px solid #e4721a',
+            borderRadius: '10px',
+            margin: '4px 8px',
+            width: '100%',
+            textDecoration: 'none',
+            cursor: 'pointer',
+            transition: '0.3s',
+         '&:hover': {
+              backgroundColor: '#ffa768',
+              borderColor: '#ff7017',
+            },
+          }}
+        >
+          <ListItemButton sx={{
+    '&:hover': {
+      backgroundColor: 'transparent', // 🔥 Anula el gris feo
+    },
+  }}>
+            <ListItemIcon sx={{ color: isSelected ? 'white' : '#ff7017' }}>
+              {isLogout ? <LogoutIcon /> : <AppRegistrationIcon />}
+            </ListItemIcon>
+            <Typography sx={{
+              fontWeight: 'bold',
+              fontSize: '0.8rem',
+              color: isSelected ? 'white' : 'black',
+            }}>
+              {item.text}
+            </Typography>
+          </ListItemButton>
+        </Box>
+      </ListItem>
+    );
+  })}
+</List>
+
         <Divider />
       </Drawer>
 

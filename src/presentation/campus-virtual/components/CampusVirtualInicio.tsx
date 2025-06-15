@@ -16,6 +16,7 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { useCurso } from '@/src/application/context/CursoContext';
+import { useUser } from '../../hooks/useUser.hook';
 
 
 interface User {
@@ -26,21 +27,26 @@ interface User {
 
 const CampusVirtualInicio = () => {
     const { setCursoSeleccionado } = useCurso();
+    const { user } = useUser();
   const [cursos, setCursos] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true); // Estado para controlar la carga
-  const [cursoProgreso, setCursoProgreso] = useState<any[]>()
+  const [cursoProgreso, setCursoProgreso] = useState<any[]>();
+
 
   useEffect(() => {
     // Función para obtener la lista de cursos
 
     const fetchCursos = async () => {
+      setLoading(true);
       try {
         // Realiza la solicitud HTTP para obtener los cursos
-        const res1 = await apiClient.get(`/campus-virtual/usuario-cursos?user_id=${1}`); // Cambia la URL según tu configuración de API
+        const res1 = await apiClient.get(`/campus-virtual/usuario-cursos?user_id=${user?.user_id}`); // Cambia la URL según tu configuración de API
         setCursos(res1.data.curso);
 
-        const res2 = await apiClient.get(`/campus-virtual/usuario-curso-info-progreso?user_id=${1}`);
+        const res2 = await apiClient.get(`/campus-virtual/usuario-curso-info-progreso?user_id=${user?.user_id}`);
         res2.data.success && setCursoProgreso(res2.data.progresoCurso);
+
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching courses:", error);
       } finally {
@@ -48,18 +54,22 @@ const CampusVirtualInicio = () => {
       }
     };
 
-    fetchCursos();
-  }, []);
+    if(user){
+      fetchCursos();
+    }
+  }, [user]);
 
   return (
     <Grid sx={{ maxWidth: '1200px', margin: {
       xs: '0',
       md: '0 20px'
     } }}>
-      <Typography sx={{ marginTop: {
+      {/* <Typography sx={{ marginTop: {
         xs: '130px',
-        md: '180px'
-      }, marginBottom: '10px', fontWeight: 'bold', color: '#737373', fontSize: '1rem' }}>Tus cursos activos</Typography>
+        sm: '140px',
+        md: '180px',
+        lg: '200px'
+      }, marginBottom: '10px', fontWeight: 'bold', color: '#737373', fontSize: '1rem' }}>Tus cursos activos</Typography> */}
       <Grid component="section"
         display="grid"
         gridTemplateColumns={{
@@ -73,6 +83,12 @@ const CampusVirtualInicio = () => {
           gap: { xs: 2 },
           pt: 0,
           p: 0,
+          marginTop: {
+            xs: '140px',
+            sm: '155px',
+            md: '180px',
+            lg: '230px'
+          }, marginBottom: '10px',
           alignItems: "center",
           maxWidth: {
             sm: '768px',
